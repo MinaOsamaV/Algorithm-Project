@@ -5,6 +5,13 @@ import time
 import heapq
 import random
 import os
+from bfs import bfs
+from dfs import dfs
+from ucs import ucs
+from quick_sort import quick_sort
+from insertion_sort import insertion_sort
+from merge_sort import merge_sort
+from selection_sort import selection_sort
 
 st.set_page_config(page_title="Algorithm Visualizer", layout="wide", initial_sidebar_state="auto")
 st.markdown(
@@ -239,127 +246,6 @@ def draw_graph(graph, visited_nodes, pos, zoom, color):
     st.pyplot(plt)
     plt.close()
 
-# ----------------- Graph Algorithms -----------------
-
-def bfs(graph, start_node):
-    visited = []
-    queue = [start_node]
-    steps = []
-    while queue:
-        node = queue.pop(0)
-        if node not in visited:
-            visited.append(node)
-            steps.append(visited[:])
-            for neighbor in graph.neighbors(node):
-                if neighbor not in visited and neighbor not in queue:
-                    queue.append(neighbor)
-    save_log("bfs_steps", steps)
-    return steps
-
-def dfs(graph, start_node, visited=None, steps=None):
-    if visited is None:
-        visited = []
-    if steps is None:
-        steps = []
-    visited.append(start_node)
-    steps.append(visited[:])
-    for neighbor in graph.neighbors(start_node):
-        if neighbor not in visited:
-            dfs(graph, neighbor, visited, steps)
-    return steps
-
-def ucs(graph, start_node):
-    visited = []
-    queue = [(0, start_node)]
-    heapq.heapify(queue)
-    costs = {start_node: 0}
-    steps = []
-    while queue:
-        cost, node = heapq.heappop(queue)
-        if node not in visited:
-            visited.append(node)
-            steps.append(visited[:])
-            for neighbor in graph.neighbors(node):
-                edge_weight = graph[node][neighbor].get('weight', 1)
-                new_cost = cost + edge_weight
-                if neighbor not in costs or new_cost < costs[neighbor]:
-                    costs[neighbor] = new_cost
-                    heapq.heappush(queue, (new_cost, neighbor))
-    save_log("ucs_steps", steps)
-    return steps
-
-# ----------------- Sorting Algorithms -----------------
-
-def draw_bars(data, color='skyblue'):
-    plt.figure(figsize=(10, 4))
-    plt.bar(range(len(data)), data, color=color)
-    st.pyplot(plt)
-    plt.close()
-
-def insertion_sort(arr):
-    steps = [arr[:]]
-    for i in range(1, len(arr)):
-        j = i
-        while j > 0 and arr[j-1] > arr[j]:
-            arr[j], arr[j-1] = arr[j-1], arr[j]
-            j -= 1
-            steps.append(arr[:])
-    save_log("insertion_sort_steps", steps)
-    return steps
-
-def merge_sort(arr):
-    steps = [arr[:]]
-    def merge_sort_helper(array, l, r):
-        if r - l > 1:
-            m = (l + r) // 2
-            yield from merge_sort_helper(array, l, m)
-            yield from merge_sort_helper(array, m, r)
-            left, right = array[l:m], array[m:r]
-            i = j = 0
-            for k in range(l, r):
-                if j >= len(right) or (i < len(left) and left[i] < right[j]):
-                    array[k] = left[i]
-                    i += 1
-                else:
-                    array[k] = right[j]
-                    j += 1
-                steps.append(array[:])
-                yield array[:]
-    yield from merge_sort_helper(arr, 0, len(arr))
-    save_log("merge_sort_steps", steps)
-
-def quick_sort(arr):
-    steps = [arr[:]]
-    def quick_sort_helper(array, low, high):
-        if low < high:
-            pivot = array[high]
-            i = low
-            for j in range(low, high):
-                if array[j] < pivot:
-                    array[i], array[j] = array[j], array[i]
-                    i += 1
-                    steps.append(array[:])
-                    yield array[:]
-            array[i], array[high] = array[high], array[i]
-            steps.append(array[:])
-            yield array[:]
-            yield from quick_sort_helper(array, low, i - 1)
-            yield from quick_sort_helper(array, i + 1, high)
-    yield from quick_sort_helper(arr, 0, len(arr) - 1)
-    save_log("quick_sort_steps", steps)
-
-def selection_sort(arr):
-    steps = [arr[:]]
-    for i in range(len(arr)):
-        min_idx = i
-        for j in range(i+1, len(arr)):
-            if arr[j] < arr[min_idx]:
-                min_idx = j
-        arr[i], arr[min_idx] = arr[min_idx], arr[i]
-        steps.append(arr[:])
-    save_log("selection_sort_steps", steps)
-    return steps
-
 # ----------------- Main Streamlit App -----------------
 
 def main():
@@ -468,7 +354,6 @@ def main():
                     color = '#f59e0b'  # Amber
                 elif algorithm == "DFS":
                     steps = dfs(graph, start_node)
-                    save_log("dfs_steps", steps)
                     color = '#3b82f6'  # Blue
                 else:
                     steps = ucs(graph, start_node)
