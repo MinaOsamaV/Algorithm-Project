@@ -26,7 +26,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Custom CSS for a perfect modern dark mode
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
@@ -222,7 +221,6 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# ----------------- Prepare Logs Directory -----------------
 
 if not os.path.exists("logs"):
     os.makedirs("logs")
@@ -377,7 +375,6 @@ def selection_sort(arr):
 def main():
     st.markdown('<div class="main">', unsafe_allow_html=True)
     
-    # Header with gradient background
     st.markdown("""
         <div style="
             background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
@@ -504,11 +501,9 @@ def main():
         with col1:
             sort_algo = st.selectbox("Algorithm", ["Insertion Sort", "Merge Sort", "Quick Sort", "Selection Sort"])
             
-            # إضافة خيارات لإدخال البيانات
             input_method = st.radio("Choose input method:", ["Manual Input", "Random Numbers"])
             
             if input_method == "Manual Input":
-                # حقل إدخال النص للقيم
                 input_text = st.text_input(
                     "Enter numbers (separated by commas)",
                     placeholder="Example: 5,3,8,6,2",
@@ -516,7 +511,6 @@ def main():
                 )
                 
                 try:
-                    # تحويل النص إلى مصفوفة أرقام
                     data = [int(x.strip()) for x in input_text.split(",") if x.strip()]
                     if not data:
                         st.warning("Please enter some numbers!")
@@ -525,20 +519,17 @@ def main():
                     st.error("Invalid input! Please enter only numbers separated by commas.")
                     data = []
             else:
-                # خيار الأرقام العشوائية
                 size = st.slider("📊 Array Size", 5, 30, 10)
                 data = [random.randint(1, 100) for _ in range(size)]
         
         with col2:
             speed = st.slider("⚡ Animation Speed", 0.1, 1.0, 0.5, 0.1)
             
-            # إضافة زر لمسح المدخلات
             if st.button("Clear Input", use_container_width=True):
-                # بدلاً من استخدام rerun، نقوم بإعادة تعيين المتغيرات
                 if 'input_text' in st.session_state:
                     del st.session_state.input_text
                 data = []
-                st.empty()  # مسح المحتوى الحالي
+                st.empty()  
 
         if st.button("▶️ Start Sorting", use_container_width=True):
             if not data:
@@ -562,7 +553,6 @@ def main():
                         draw_bars(data_step, highlights)
                         time.sleep(speed)
                         
-                        # إضافة شرح للخطوة
                         if highlights.get('comparing'):
                             st.write(f"Comparing elements at positions: {highlights['comparing']}")
                         if highlights.get('swapped'):
