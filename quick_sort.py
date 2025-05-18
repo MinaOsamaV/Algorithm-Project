@@ -1,20 +1,34 @@
 def quick_sort(arr, save_log=None):
-    steps = [arr[:]]
-    def quick_sort_helper(array, low, high):
+    steps = [(arr[:], {'comparing': [], 'swapped': []})]
+    
+    def partition(l, low, high):
+        pivot = l[low]
+        i = low - 1
+        j = high + 1
+        
+        while True:
+            j -= 1
+            while l[j] > pivot:
+                j -= 1
+            
+            i += 1
+            while l[i] < pivot:
+                i += 1
+            
+            if i < j:
+                steps.append((l[:], {'comparing': [i, j], 'swapped': []}))
+                l[i], l[j] = l[j], l[i]
+                steps.append((l[:], {'comparing': [], 'swapped': [i, j]}))
+            else:
+                return j
+    
+    def quick_sort_helper(l, low, high):
         if low < high:
-            pivot = array[high]
-            i = low
-            for j in range(low, high):
-                if array[j] < pivot:
-                    array[i], array[j] = array[j], array[i]
-                    i += 1
-                    steps.append(array[:])
-                    yield array[:]
-            array[i], array[high] = array[high], array[i]
-            steps.append(array[:])
-            yield array[:]
-            yield from quick_sort_helper(array, low, i - 1)
-            yield from quick_sort_helper(array, i + 1, high)
-    yield from quick_sort_helper(arr, 0, len(arr) - 1)
+            q = partition(l, low, high)
+            quick_sort_helper(l, low, q)
+            quick_sort_helper(l, q + 1, high)
+    
+    quick_sort_helper(arr, 0, len(arr) - 1)
     if save_log:
-        save_log("quick_sort_steps", steps) 
+        save_log("quick_sort_steps", steps)
+    return steps 

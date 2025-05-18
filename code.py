@@ -269,107 +269,6 @@ def draw_bars(data, highlight_indices=None, default_color='#6366f1', highlight_c
     st.pyplot(plt)
     plt.close()
 
-def insertion_sort(arr):
-    steps = []
-    steps.append((arr[:], {'comparing': [], 'swapped': []}))
-    
-    for i in range(1, len(arr)):
-        j = i
-        steps.append((arr[:], {'comparing': [j], 'swapped': []}))
-        
-        while j > 0 and arr[j-1] > arr[j]:
-            steps.append((arr[:], {'comparing': [j, j-1], 'swapped': []}))
-            arr[j], arr[j-1] = arr[j-1], arr[j]
-            steps.append((arr[:], {'comparing': [], 'swapped': [j, j-1]}))
-            j -= 1
-    
-    return steps
-
-def merge_sort(arr):
-    steps = []
-    steps.append((arr[:], {'comparing': [], 'swapped': []}))
-    
-    def merge_sort_helper(array, l, r):
-        if r - l > 1:
-            m = (l + r) // 2
-            merge_sort_helper(array, l, m)
-            merge_sort_helper(array, m, r)
-            
-            left = array[l:m]
-            right = array[m:r]
-            i = j = 0
-            k = l
-            
-            while i < len(left) and j < len(right):
-                steps.append((array[:], {'comparing': [k], 'swapped': []}))
-                if left[i] <= right[j]:
-                    array[k] = left[i]
-                    i += 1
-                else:
-                    array[k] = right[j]
-                    j += 1
-                steps.append((array[:], {'comparing': [], 'swapped': [k]}))
-                k += 1
-            
-            while i < len(left):
-                array[k] = left[i]
-                steps.append((array[:], {'comparing': [], 'swapped': [k]}))
-                i += 1
-                k += 1
-            
-            while j < len(right):
-                array[k] = right[j]
-                steps.append((array[:], {'comparing': [], 'swapped': [k]}))
-                j += 1
-                k += 1
-    
-    merge_sort_helper(arr, 0, len(arr))
-    return steps
-
-def quick_sort(arr):
-    steps = []
-    steps.append((arr[:], {'comparing': [], 'swapped': []}))
-    
-    def quick_sort_helper(array, low, high):
-        if low < high:
-            pivot = array[high]
-            i = low
-            
-            for j in range(low, high):
-                steps.append((array[:], {'comparing': [j, high], 'swapped': []}))
-                if array[j] < pivot:
-                    array[i], array[j] = array[j], array[i]
-                    steps.append((array[:], {'comparing': [], 'swapped': [i, j]}))
-                    i += 1
-            
-            array[i], array[high] = array[high], array[i]
-            steps.append((array[:], {'comparing': [], 'swapped': [i, high]}))
-            
-            quick_sort_helper(array, low, i - 1)
-            quick_sort_helper(array, i + 1, high)
-    
-    quick_sort_helper(arr, 0, len(arr) - 1)
-    return steps
-
-def selection_sort(arr):
-    steps = []
-    steps.append((arr[:], {'comparing': [], 'swapped': []}))
-    
-    for i in range(len(arr)):
-        min_idx = i
-        steps.append((arr[:], {'comparing': [i], 'swapped': []}))
-        
-        for j in range(i + 1, len(arr)):
-            steps.append((arr[:], {'comparing': [j, min_idx], 'swapped': []}))
-            if arr[j] < arr[min_idx]:
-                min_idx = j
-        
-        if min_idx != i:
-            arr[i], arr[min_idx] = arr[min_idx], arr[i]
-            steps.append((arr[:], {'comparing': [], 'swapped': [i, min_idx]}))
-    
-    return steps
-
 # ----------------- Main Streamlit App -----------------
 
 def main():
@@ -392,8 +291,14 @@ def main():
 
     if 'graph' not in st.session_state:
         st.session_state.graph = nx.Graph()
+    if 'pos' not in st.session_state:
+        st.session_state.pos = None
+    if 'zoom' not in st.session_state:
+        st.session_state.zoom = 1.5
 
     graph = st.session_state.graph
+    pos = st.session_state.pos
+    zoom = st.session_state.zoom
 
     tab1, tab2, tab3 = st.tabs(["🎯 Graph Builder", "🔍 Algorithm Explorer", "📊 Sorting Visualizer"])
 
@@ -410,8 +315,12 @@ def main():
                 node_name = st.text_input("Node Label", placeholder="Enter node name...")
                 submitted_node = st.form_submit_button("✨ Add Node")
                 if submitted_node and node_name:
-                    graph.add_node(node_name)
-                    st.success(f"Node '{node_name}' created successfully!")
+                    if node_name in graph.nodes:
+                        st.error(f"Node '{node_name}' already exists!")
+                    else:
+                        graph.add_node(node_name)
+                        st.session_state.pos = nx.spring_layout(graph, seed=42)
+                        st.success(f"Node '{node_name}' created successfully!")
             st.markdown('</div>', unsafe_allow_html=True)
 
             if graph.number_of_nodes() >= 2:
@@ -423,8 +332,11 @@ def main():
                     weight = st.number_input("Edge Weight", min_value=1, value=1)
                     submitted_edge = st.form_submit_button("🔗 Connect Nodes")
                     if submitted_edge and node1 != node2:
-                        graph.add_edge(node1, node2, weight=weight)
-                        st.success(f"Connected '{node1}' → '{node2}' (weight: {weight})")
+                        if graph.has_edge(node1, node2):
+                            st.error(f"Edge between '{node1}' and '{node2}' already exists!")
+                        else:
+                            graph.add_edge(node1, node2, weight=weight)
+                            st.success(f"Connected '{node1}' → '{node2}' (weight: {weight})")
                 st.markdown('</div>', unsafe_allow_html=True)
 
         with col2:
@@ -437,6 +349,7 @@ def main():
                     submitted_remove_node = st.form_submit_button("🗑️ Remove Node")
                     if submitted_remove_node:
                         graph.remove_node(node_to_remove)
+                        st.session_state.pos = nx.spring_layout(graph, seed=42)
                         st.success(f"Node '{node_to_remove}' removed successfully!")
 
             if graph.number_of_edges() > 0:
@@ -451,9 +364,13 @@ def main():
 
         st.markdown('<div class="graph-container">', unsafe_allow_html=True)
         st.markdown('<h3 style="margin-bottom: 1.5rem;">Graph Preview</h3>', unsafe_allow_html=True)
-        zoom = st.slider("🔍 Zoom Level", 0.5, 3.0, 1.5, 0.1)
-        pos = nx.spring_layout(graph, seed=42)
-        draw_graph(graph, [], pos, zoom, "lightblue")
+        zoom = st.slider("🔍 Zoom Level", 0.5, 3.0, st.session_state.zoom, 0.1)
+        st.session_state.zoom = zoom
+        if pos is None and graph.number_of_nodes() > 0:
+            pos = nx.spring_layout(graph, seed=42)
+            st.session_state.pos = pos
+        if pos is not None:
+            draw_graph(graph, [], pos, zoom, "lightblue")
         st.markdown('</div>', unsafe_allow_html=True)
 
     # -------- Algorithm Explorer Tab --------
@@ -472,21 +389,28 @@ def main():
                 speed = st.slider("⚡ Animation Speed", 0.1, 2.0, 0.7, 0.1)
             
             if st.button("▶️ Start Algorithm", use_container_width=True):
-                if algorithm == "BFS":
-                    steps = bfs(graph, start_node)
-                    color = '#f59e0b'  # Amber
-                elif algorithm == "DFS":
-                    steps = dfs(graph, start_node)
-                    color = '#3b82f6'  # Blue
-                else:
-                    steps = ucs(graph, start_node)
-                    color = '#10b981'  # Green
+                if pos is None:
+                    pos = nx.spring_layout(graph, seed=42)
+                    st.session_state.pos = pos
+                
+                try:
+                    if algorithm == "BFS":
+                        steps = bfs(graph, start_node)
+                        color = '#f59e0b'  # Amber
+                    elif algorithm == "DFS":
+                        steps = dfs(graph, start_node)
+                        color = '#3b82f6'  # Blue
+                    else:
+                        steps = ucs(graph, start_node)
+                        color = '#10b981'  # Green
 
-                st.markdown('<div class="graph-container">', unsafe_allow_html=True)
-                for step in steps:
-                    draw_graph(graph, step, pos, zoom, color)
-                    time.sleep(speed)
-                st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="graph-container">', unsafe_allow_html=True)
+                    for step in steps:
+                        draw_graph(graph, step, pos, zoom, color)
+                        time.sleep(speed)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                except Exception as e:
+                    st.error(f"An error occurred while running {algorithm}: {str(e)}")
             st.markdown('</div>', unsafe_allow_html=True)
         else:
             st.warning("Please create a graph first in the Graph Builder tab.")
@@ -529,7 +453,7 @@ def main():
                 if 'input_text' in st.session_state:
                     del st.session_state.input_text
                 data = []
-                st.empty()  
+                st.empty()
 
         if st.button("▶️ Start Sorting", use_container_width=True):
             if not data:
