@@ -503,44 +503,77 @@ def main():
         
         with col1:
             sort_algo = st.selectbox("Algorithm", ["Insertion Sort", "Merge Sort", "Quick Sort", "Selection Sort"])
-            size = st.slider("📊 Array Size", 5, 30, 10)
+            
+            # إضافة خيارات لإدخال البيانات
+            input_method = st.radio("Choose input method:", ["Manual Input", "Random Numbers"])
+            
+            if input_method == "Manual Input":
+                # حقل إدخال النص للقيم
+                input_text = st.text_input(
+                    "Enter numbers (separated by commas)",
+                    placeholder="Example: 5,3,8,6,2",
+                    help="Enter numbers separated by commas. Example: 5,3,8,6,2"
+                )
+                
+                try:
+                    # تحويل النص إلى مصفوفة أرقام
+                    data = [int(x.strip()) for x in input_text.split(",") if x.strip()]
+                    if not data:
+                        st.warning("Please enter some numbers!")
+                        data = []
+                except ValueError:
+                    st.error("Invalid input! Please enter only numbers separated by commas.")
+                    data = []
+            else:
+                # خيار الأرقام العشوائية
+                size = st.slider("📊 Array Size", 5, 30, 10)
+                data = [random.randint(1, 100) for _ in range(size)]
         
         with col2:
             speed = st.slider("⚡ Animation Speed", 0.1, 1.0, 0.5, 0.1)
-        
-        data = [random.randint(1, 100) for _ in range(size)]
+            
+            # إضافة زر لمسح المدخلات
+            if st.button("Clear Input", use_container_width=True):
+                # بدلاً من استخدام rerun، نقوم بإعادة تعيين المتغيرات
+                if 'input_text' in st.session_state:
+                    del st.session_state.input_text
+                data = []
+                st.empty()  # مسح المحتوى الحالي
 
         if st.button("▶️ Start Sorting", use_container_width=True):
-            st.markdown('<div class="graph-container">', unsafe_allow_html=True)
-            st.write("Original Array:")
-            draw_bars(data)
-            
-            try:
-                if sort_algo == "Insertion Sort":
-                    steps = insertion_sort(data[:])
-                elif sort_algo == "Merge Sort":
-                    steps = merge_sort(data[:])
-                elif sort_algo == "Quick Sort":
-                    steps = quick_sort(data[:])
-                else:
-                    steps = selection_sort(data[:])
+            if not data:
+                st.error("Please enter some numbers first!")
+            else:
+                st.markdown('<div class="graph-container">', unsafe_allow_html=True)
+                st.write("Original Array:")
+                draw_bars(data)
+                
+                try:
+                    if sort_algo == "Insertion Sort":
+                        steps = insertion_sort(data[:])
+                    elif sort_algo == "Merge Sort":
+                        steps = merge_sort(data[:])
+                    elif sort_algo == "Quick Sort":
+                        steps = quick_sort(data[:])
+                    else:
+                        steps = selection_sort(data[:])
 
-                for data_step, highlights in steps:
-                    draw_bars(data_step, highlights)
-                    time.sleep(speed)
+                    for data_step, highlights in steps:
+                        draw_bars(data_step, highlights)
+                        time.sleep(speed)
+                        
+                        # إضافة شرح للخطوة
+                        if highlights.get('comparing'):
+                            st.write(f"Comparing elements at positions: {highlights['comparing']}")
+                        if highlights.get('swapped'):
+                            st.write(f"Swapped elements at positions: {highlights['swapped']}")
                     
-                    # إضافة شرح للخطوة
-                    if highlights.get('comparing'):
-                        st.write(f"Comparing elements at positions: {highlights['comparing']}")
-                    if highlights.get('swapped'):
-                        st.write(f"Swapped elements at positions: {highlights['swapped']}")
+                    st.success(f"{sort_algo} completed successfully!")
+                    
+                except Exception as e:
+                    st.error(f"An error occurred: {str(e)}")
                 
-                st.success(f"{sort_algo} completed successfully!")
-                
-            except Exception as e:
-                st.error(f"An error occurred: {str(e)}")
-            
-            st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
