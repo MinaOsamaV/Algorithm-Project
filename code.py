@@ -246,6 +246,132 @@ def draw_graph(graph, visited_nodes, pos, zoom, color):
     st.pyplot(plt)
     plt.close()
 
+# ----------------- Sorting Visualization Functions -----------------
+def draw_bars(data, highlight_indices=None, default_color='#6366f1', highlight_color='#38bdf8', comparing_color='#f59e0b'):
+    plt.figure(figsize=(max(10, len(data)//2), 2))
+    if highlight_indices is None:
+        highlight_indices = {}
+    ax = plt.gca()
+    ax.clear()
+    
+    for i, val in enumerate(data):
+        if i in highlight_indices.get('comparing', []):
+            color = comparing_color
+        elif i in highlight_indices.get('swapped', []):
+            color = highlight_color
+        else:
+            color = default_color
+            
+        ax.add_patch(plt.Rectangle((i, 0), 1, 1, color=color, ec='black'))
+        ax.text(i + 0.5, 0.5, str(val), ha='center', va='center', fontsize=12, color='white', fontweight='bold')
+    
+    ax.set_xlim(0, len(data))
+    ax.set_ylim(0, 1)
+    ax.axis('off')
+    st.pyplot(plt)
+    plt.close()
+
+def insertion_sort(arr):
+    steps = []
+    steps.append((arr[:], {'comparing': [], 'swapped': []}))
+    
+    for i in range(1, len(arr)):
+        j = i
+        steps.append((arr[:], {'comparing': [j], 'swapped': []}))
+        
+        while j > 0 and arr[j-1] > arr[j]:
+            steps.append((arr[:], {'comparing': [j, j-1], 'swapped': []}))
+            arr[j], arr[j-1] = arr[j-1], arr[j]
+            steps.append((arr[:], {'comparing': [], 'swapped': [j, j-1]}))
+            j -= 1
+    
+    return steps
+
+def merge_sort(arr):
+    steps = []
+    steps.append((arr[:], {'comparing': [], 'swapped': []}))
+    
+    def merge_sort_helper(array, l, r):
+        if r - l > 1:
+            m = (l + r) // 2
+            merge_sort_helper(array, l, m)
+            merge_sort_helper(array, m, r)
+            
+            left = array[l:m]
+            right = array[m:r]
+            i = j = 0
+            k = l
+            
+            while i < len(left) and j < len(right):
+                steps.append((array[:], {'comparing': [k], 'swapped': []}))
+                if left[i] <= right[j]:
+                    array[k] = left[i]
+                    i += 1
+                else:
+                    array[k] = right[j]
+                    j += 1
+                steps.append((array[:], {'comparing': [], 'swapped': [k]}))
+                k += 1
+            
+            while i < len(left):
+                array[k] = left[i]
+                steps.append((array[:], {'comparing': [], 'swapped': [k]}))
+                i += 1
+                k += 1
+            
+            while j < len(right):
+                array[k] = right[j]
+                steps.append((array[:], {'comparing': [], 'swapped': [k]}))
+                j += 1
+                k += 1
+    
+    merge_sort_helper(arr, 0, len(arr))
+    return steps
+
+def quick_sort(arr):
+    steps = []
+    steps.append((arr[:], {'comparing': [], 'swapped': []}))
+    
+    def quick_sort_helper(array, low, high):
+        if low < high:
+            pivot = array[high]
+            i = low
+            
+            for j in range(low, high):
+                steps.append((array[:], {'comparing': [j, high], 'swapped': []}))
+                if array[j] < pivot:
+                    array[i], array[j] = array[j], array[i]
+                    steps.append((array[:], {'comparing': [], 'swapped': [i, j]}))
+                    i += 1
+            
+            array[i], array[high] = array[high], array[i]
+            steps.append((array[:], {'comparing': [], 'swapped': [i, high]}))
+            
+            quick_sort_helper(array, low, i - 1)
+            quick_sort_helper(array, i + 1, high)
+    
+    quick_sort_helper(arr, 0, len(arr) - 1)
+    return steps
+
+def selection_sort(arr):
+    steps = []
+    steps.append((arr[:], {'comparing': [], 'swapped': []}))
+    
+    for i in range(len(arr)):
+        min_idx = i
+        steps.append((arr[:], {'comparing': [i], 'swapped': []}))
+        
+        for j in range(i + 1, len(arr)):
+            steps.append((arr[:], {'comparing': [j, min_idx], 'swapped': []}))
+            if arr[j] < arr[min_idx]:
+                min_idx = j
+        
+        if min_idx != i:
+            arr[i], arr[min_idx] = arr[min_idx], arr[i]
+            steps.append((arr[:], {'comparing': [], 'swapped': [i, min_idx]}))
+    
+    return steps
+
 # ----------------- Main Streamlit App -----------------
 
 def main():
@@ -388,18 +514,32 @@ def main():
             st.markdown('<div class="graph-container">', unsafe_allow_html=True)
             st.write("Original Array:")
             draw_bars(data)
-            if sort_algo == "Insertion Sort":
-                steps = insertion_sort(data[:])
-            elif sort_algo == "Merge Sort":
-                steps = list(merge_sort(data[:]))
-            elif sort_algo == "Quick Sort":
-                steps = list(quick_sort(data[:]))
-            else:
-                steps = selection_sort(data[:])
+            
+            try:
+                if sort_algo == "Insertion Sort":
+                    steps = insertion_sort(data[:])
+                elif sort_algo == "Merge Sort":
+                    steps = merge_sort(data[:])
+                elif sort_algo == "Quick Sort":
+                    steps = quick_sort(data[:])
+                else:
+                    steps = selection_sort(data[:])
 
-            for step in steps:
-                draw_bars(step)
-                time.sleep(speed)
+                for data_step, highlights in steps:
+                    draw_bars(data_step, highlights)
+                    time.sleep(speed)
+                    
+                    # إضافة شرح للخطوة
+                    if highlights.get('comparing'):
+                        st.write(f"Comparing elements at positions: {highlights['comparing']}")
+                    if highlights.get('swapped'):
+                        st.write(f"Swapped elements at positions: {highlights['swapped']}")
+                
+                st.success(f"{sort_algo} completed successfully!")
+                
+            except Exception as e:
+                st.error(f"An error occurred: {str(e)}")
+            
             st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
